@@ -248,8 +248,12 @@ static bool unsealRtspMessage(char* rawMessage, int rawMessageLen,
             // The authenticated nonce check still prevents replay when CSeq
             // is absent.
             char* requestCseqString = getOptionContent(request->options, "CSeq");
+            char* responseCseqString = getOptionContent(response->options, "CSeq");
             int expectedCseq = requestCseqString != NULL ? atoi(requestCseqString) : SEQ_INVALID;
-            if (!isMatchingRtspResponseCseq(expectedCseq, response->sequenceNumber)) {
+            bool invalidCseq = responseCseqString != NULL &&
+                (response->sequenceNumber == SEQ_INVALID ||
+                 strspn(responseCseqString, "0123456789") != strlen(responseCseqString));
+            if (invalidCseq || !isMatchingRtspResponseCseq(expectedCseq, response->sequenceNumber)) {
                 Limelog("Rejecting encrypted RTSP response with mismatched CSeq\n");
                 freeMessage(response);
                 success = false;
